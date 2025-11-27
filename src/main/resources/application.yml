@@ -1,0 +1,38 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: authentification-service
+
+app:
+  metamask:
+    signature-message-prefix: "Sign this message to authenticate: "
+
+  sas:
+    base-url: http://localhost:9000
+    token-endpoint: http://localhost:9000/oauth2/token
+
+  oauth2:
+    client:
+      id: frontend-client
+      secret: my-temp-secret
+
+feign:
+  client:
+    config:
+      user-management-service:
+
+logging:
+  level:
+    ma.fstt.authentificationservice: DEBUG
+    org.springframework.security: DEBUG
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true

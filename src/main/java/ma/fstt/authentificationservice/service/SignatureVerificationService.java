@@ -16,8 +16,8 @@ public class SignatureVerificationService {
 
     private static final Logger log = LoggerFactory.getLogger(SignatureVerificationService.class);
 
-    @Value("${app.metamask.signature-message-prefix}")
-    private String messagePrefix;
+
+    private String messagePrefix = "Sign this message to authenticate: ";
 
     private final UserServiceClient userServiceClient;
 

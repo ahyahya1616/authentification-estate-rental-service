@@ -8,6 +8,7 @@ import org.web3j.utils.Numeric;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SignatureException;
+import java.util.Arrays;
 
 /**
  * Utilitaires de vérification de signature Ethereum
@@ -21,11 +22,12 @@ public class Web3SignatureUtils {
      */
     public static String ecRecover(String message, String signature) {
         try {
+            byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
 
-            String prefixedMessage = "\u0019Ethereum Signed Message:\n" + message.length() + message;
-            byte[] messageHash = org.web3j.crypto.Hash.sha3(prefixedMessage.getBytes(StandardCharsets.UTF_8));
+            System.out.println("📌 Message original: " + message);
+            System.out.println("📌 Message bytes length: " + messageBytes.length);
+            System.out.println("📌 Signature: " + signature);
 
-            // Extrairer, s, v depuis la signature
             byte[] signatureBytes = Numeric.hexStringToByteArray(signature);
 
             if (signatureBytes.length != 65) {
@@ -33,35 +35,36 @@ public class Web3SignatureUtils {
             }
 
             byte v = signatureBytes[64];
+            System.out.println("📌 V original: " + v);
+
             if (v < 27) {
                 v += 27;
             }
 
-            byte[] r = new byte[32];
-            byte[] s = new byte[32];
-            System.arraycopy(signatureBytes, 0, r, 0, 32);
-            System.arraycopy(signatureBytes, 32, s, 0, 32);
+            System.out.println("📌 V ajusté: " + v);
 
-            // Créer l'objet SignatureData
-            Sign.SignatureData signatureData = new Sign.SignatureData(
-                    v,
-                    r,
-                    s
+            byte[] r = Arrays.copyOfRange(signatureBytes, 0, 32);
+            byte[] s = Arrays.copyOfRange(signatureBytes, 32, 64);
+
+            Sign.SignatureData signatureData = new Sign.SignatureData(v, r, s);
+
+            // Essayer avec signedPrefixedMessageToKey
+            BigInteger publicKey = Sign.signedPrefixedMessageToKey(
+                    messageBytes,
+                    signatureData
             );
 
-            // Récupérer la clé publique
-            BigInteger publicKey = Sign.signedMessageHashToKey(messageHash, signatureData);
+            String recoveredAddress = "0x" + Keys.getAddress(publicKey);
+            System.out.println("📌 Adresse récupérée: " + recoveredAddress);
 
-            // Convertir en adresse Ethereum
-            String address = "0x" + Keys.getAddress(publicKey);
+            return recoveredAddress;
 
-            return address;
-
-        } catch (SignatureException e) {
+        } catch (Exception e) {
+            System.err.println("❌ Erreur: " + e.getMessage());
+            e.printStackTrace();
             throw new InvalidSignatureException("Erreur lors de la récupération de l'adresse : " + e.getMessage());
         }
     }
-
     /**
      * Vérifie si une adresse Ethereum est valide
      */

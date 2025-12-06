@@ -1,5 +1,6 @@
 package ma.fstt.authentificationservice.controller;
 
+import feign.FeignException;
 import jakarta.validation.Valid;
 import ma.fstt.authentificationservice.dto.MetamaskLoginRequest;
 import ma.fstt.authentificationservice.dto.NonceResponse;
@@ -7,6 +8,7 @@ import ma.fstt.authentificationservice.dto.TokenResponse;
 import ma.fstt.authentificationservice.service.NonceService;
 import ma.fstt.authentificationservice.service.SasTokenService;
 import ma.fstt.authentificationservice.service.SignatureVerificationService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,15 +39,31 @@ public class MetamaskAuthController {
     public ResponseEntity<?> getNonce(@RequestParam String wallet) {
         try {
             String nonce = nonceService.generateAndStoreNonce(wallet);
-            return ResponseEntity.ok(new NonceResponse(nonce));
+            return ResponseEntity.ok(Map.of("nonce", nonce));
+        } catch (FeignException.NotFound e) {
+            // Wallet non trouvé
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of(
+                            "error", "USER_NOT_FOUND",
+                            "message", "Wallet not registered. Please register first."
+                    ));
+        } catch (FeignException e) {
+            // Autres erreurs provenant de User-Management-Service
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "error", "USER_SERVICE_ERROR",
+                            "message", "Erreur interne du service utilisateur"
+                    ));
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of(
-                    "error", "INTERNAL_ERROR",
-                    "message", e.getMessage()
-            ));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "error", "INTERNAL_ERROR",
+                            "message", "Erreur serveur"
+                    ));
         }
     }
+
+
 
 
     /**
